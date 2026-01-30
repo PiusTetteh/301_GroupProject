@@ -176,6 +176,7 @@ private:
 class MultikernelSystem {
 private:
     std::vector<std::unique_ptr<CoreKernel>> cores;
+    std::vector<CoreKernel*> core_ptrs;  // Persistent pointers for inter-core communication
     std::atomic<int> next_pid{0};
     std::atomic<bool> system_running{false};
     
@@ -200,6 +201,11 @@ public:
     
     // System-wide statistics
     void print_statistics();
+    float get_comm_overhead_pct() const;
+    
+    // Message-passing demonstrations
+    void send_heartbeat_messages();
+    void demo_resource_messages();
     
 private:
     void load_balancer_thread();

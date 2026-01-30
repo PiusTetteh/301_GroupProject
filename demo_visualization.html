@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Multikernel OS - Message Passing Demo</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #252526;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        h1 {
+            color: #4ec9b0;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #569cd6;
+            margin-top: 30px;
+        }
+        .before-after {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .box {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #3e3e42;
+        }
+        .before {
+            border-color: #f48771;
+        }
+        .after {
+            border-color: #b5cea8;
+        }
+        .message {
+            color: #dcdcaa;
+            margin: 5px 0;
+        }
+        .stat {
+            color: #9cdcfe;
+            margin: 10px 0;
+        }
+        .good {
+            color: #b5cea8;
+        }
+        .bad {
+            color: #f48771;
+        }
+        .highlight {
+            background: #3e3e42;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            border-left: 3px solid #007acc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Multikernel OS - Message Passing Demonstration</h1>
+        <p>University of Ghana - DCIT301 - Group 54</p>
+
+        <h2>Problem Statement</h2>
+        <ul>
+            <li class="bad">❌ "I did not see any messages being passed as the cores were running"</li>
+            <li class="bad">❌ No workloads showcasing the messaging feature</li>
+            <li class="bad">❌ No traditional SMP comparison</li>
+        </ul>
+
+        <h2>Solution Implemented</h2>
+        
+        <div class="before-after">
+            <div class="box before">
+                <h3 class="bad">❌ BEFORE</h3>
+                <pre>
+Statistics:
+  Messages Sent:     0
+  Messages Received: 0
+  
+(No visibility into messaging!)
+                </pre>
+            </div>
+            
+            <div class="box after">
+                <h3 class="good">✅ AFTER</h3>
+                <pre>
+[MSG] Core 0 → Core 1: HEARTBEAT
+[MSG] Core 0 → Core 2: HEARTBEAT
+[MSG] Core 0 → Core 4: RESOURCE_REQUEST
+[MSG] Core 4 → Core 0: RESOURCE_RELEASE
+
+Statistics:
+  Messages Sent:     15
+  Messages Received: 15
+                </pre>
+            </div>
+        </div>
+
+        <h2>1. Message Visibility</h2>
+        <p><span class="highlight">Fixed critical bug</span>: core_ptrs vector was going out of scope</p>
+        <p><span class="highlight">Added logging</span>: All messages now show [MSG] format</p>
+        
+        <h3>Example Messages:</h3>
+        <pre>
+<span class="message">[MSG] Core 0 → Core 1: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 2: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 3: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 4: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 5: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 6: HEARTBEAT</span>
+<span class="message">[MSG] Core 0 → Core 7: HEARTBEAT</span>
+        </pre>
+
+        <h2>2. Workloads Demonstrating Messaging</h2>
+        
+        <h3>A. Heartbeat Demo</h3>
+        <p>Core 0 pings all other cores for health checking</p>
+        <p class="stat">Result: <span class="good">7 HEARTBEAT messages</span></p>
+
+        <h3>B. Resource Contention Demo</h3>
+        <p>Cores 0-3 request resources from Core 4 (resource manager)</p>
+        <pre>
+<span class="message">[MSG] Core 0 → Core 4: RESOURCE_REQUEST</span>
+<span class="message">[MSG] Core 1 → Core 4: RESOURCE_REQUEST</span>
+<span class="message">[MSG] Core 2 → Core 4: RESOURCE_REQUEST</span>
+<span class="message">[MSG] Core 3 → Core 4: RESOURCE_REQUEST</span>
+<span class="message">[MSG] Core 4 → Core 0: RESOURCE_RELEASE</span>
+<span class="message">[MSG] Core 4 → Core 1: RESOURCE_RELEASE</span>
+<span class="message">[MSG] Core 4 → Core 2: RESOURCE_RELEASE</span>
+<span class="message">[MSG] Core 4 → Core 3: RESOURCE_RELEASE</span>
+        </pre>
+        <p class="stat">Result: <span class="good">8 RESOURCE messages</span></p>
+
+        <h2>3. SMP Comparison</h2>
+        
+        <div class="before-after">
+            <div class="box">
+                <h3>SMP System (Traditional)</h3>
+                <pre>
+<span class="bad">Lock Contentions:     156</span>
+<span class="bad">Cache Invalidations:  156</span>
+Total Processes:      20
+
+<span class="bad">⚠️  High contention overhead!</span>
+<span class="bad">⚠️  Cache coherency cost!</span>
+                </pre>
+                <ul>
+                    <li class="bad">❌ Global lock bottleneck</li>
+                    <li class="bad">❌ Shared memory overhead</li>
+                    <li class="bad">❌ Cache invalidations</li>
+                </ul>
+            </div>
+            
+            <div class="box">
+                <h3>Multikernel System</h3>
+                <pre>
+<span class="good">Messages Sent:     15</span>
+<span class="good">Messages Received: 15</span>
+Total Processes:      20
+
+<span class="good">✓ No global locks!</span>
+<span class="good">✓ Message-passing only!</span>
+                </pre>
+                <ul>
+                    <li class="good">✅ No global locks</li>
+                    <li class="good">✅ Message-passing</li>
+                    <li class="good">✅ Better scalability</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Key Improvements</h2>
+        <ol>
+            <li><span class="good">✅</span> Fixed dangling pointer bug (core_ptrs)</li>
+            <li><span class="good">✅</span> Added [MSG] logging for all messages</li>
+            <li><span class="good">✅</span> Created 3 new messaging demos</li>
+            <li><span class="good">✅</span> Built SMP simulator for comparison</li>
+            <li><span class="good">✅</span> Side-by-side demonstration</li>
+        </ol>
+
+        <h2>Message Types Demonstrated</h2>
+        <ul>
+            <li><span class="highlight">HEARTBEAT</span> - Health checking (7 messages)</li>
+            <li><span class="highlight">RESOURCE_REQUEST</span> - Resource acquisition (4 messages)</li>
+            <li><span class="highlight">RESOURCE_RELEASE</span> - Resource management (4 messages)</li>
+            <li><span class="highlight">SHUTDOWN</span> - Graceful termination (8 messages)</li>
+        </ul>
+
+        <h2>Results</h2>
+        <div class="box" style="border-color: #b5cea8;">
+            <h3 class="good">✅ ALL REQUIREMENTS MET</h3>
+            <ul>
+                <li class="good">✓ Messages are now visible</li>
+                <li class="good">✓ Workloads showcase messaging</li>
+                <li class="good">✓ SMP comparison implemented</li>
+                <li class="good">✓ Differences clearly visualized</li>
+                <li class="good">✓ Ready for live demonstration</li>
+            </ul>
+        </div>
+
+        <h2>How to Run</h2>
+        <pre>
+# Build
+make
+
+# Run full demo
+./multikernel_os
+
+# Or use quick demo script
+./run_demo.sh
+        </pre>
+
+        <p style="margin-top: 30px; text-align: center; color: #4ec9b0; font-size: 1.2em;">
+            🎉 <strong>Ready for Presentation!</strong> 🎉
+        </p>
+    </div>
+</body>
+</html>

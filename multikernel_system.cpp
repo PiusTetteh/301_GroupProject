@@ -34,12 +34,12 @@ void MultikernelSystem::start() {
     system_running = true;
     
     // Create vector of core pointers for inter-core communication
-    std::vector<CoreKernel*> core_ptrs;
+    core_ptrs.clear();
     for (auto& core : cores) {
         core_ptrs.push_back(core.get());
     }
     
-    // Start all cores
+    // Start all cores with persistent pointer vector
     for (auto& core : cores) {
         core->start(&core_ptrs);
     }
@@ -214,4 +214,109 @@ void MultikernelSystem::print_statistics() {
     }
     
     std::cout << "========================================================\n" << std::endl;
+}
+
+// ============================================================================
+// COMMUNICATION OVERHEAD CALCULATION
+// ============================================================================
+
+float MultikernelSystem::get_comm_overhead_pct() const {
+    uint64_t total_messages = 0;
+    uint64_t total_processes = 0;
+    
+    for (const auto& core : cores) {
+        auto stats = core->get_statistics();
+        total_messages += stats.messages_sent + stats.messages_received;
+        total_processes += stats.processes_executed;
+    }
+    
+    // Calculate communication overhead as percentage
+    // Formula: (total_messages / (total_processes + total_messages)) * 100
+    if (total_processes + total_messages == 0) {
+        return 0.0f;
+    }
+    
+    return (static_cast<float>(total_messages) / 
+            static_cast<float>(total_processes + total_messages)) * 100.0f;
+}
+
+// ============================================================================
+// MESSAGE-PASSING DEMONSTRATIONS
+// ============================================================================
+
+void MultikernelSystem::send_heartbeat_messages() {
+    if (!system_running) {
+        std::cerr << "[SYSTEM] Cannot send heartbeats: system not running" << std::endl;
+        return;
+    }
+    
+    std::cout << "\n[HEARTBEAT] Core 0 sending heartbeat to all other cores..." << std::endl;
+    
+    // Core 0 sends heartbeat to all other cores
+    for (int i = 1; i < NUM_CORES; i++) {
+        if (!cores[0] || !cores[0]->is_running()) {
+            std::cerr << "[SYSTEM] Core 0 not available" << std::endl;
+            return;
+        }
+        
+        Message heartbeat;
+        heartbeat.source_core = 0;
+        heartbeat.dest_core = i;
+        heartbeat.type = MSG_HEARTBEAT;
+        heartbeat.timestamp = std::chrono::steady_clock::now();
+        snprintf(heartbeat.data, MAX_MESSAGE_SIZE, "Heartbeat from Core 0");
+        
+        cores[0]->send_message(heartbeat);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+}
+
+void MultikernelSystem::demo_resource_messages() {
+    if (!system_running) {
+        std::cerr << "[SYSTEM] Cannot demo resources: system not running" << std::endl;
+        return;
+    }
+    
+    std::cout << "\n[RESOURCE] Simulating resource contention..." << std::endl;
+    
+    // Simulate cores 0-3 requesting a shared resource from core 4
+    std::cout << "\nCores 0-3 requesting shared resource from Core 4..." << std::endl;
+    for (int i = 0; i < 4; i++) {
+        if (!cores[i] || !cores[i]->is_running()) {
+            std::cerr << "[SYSTEM] Core " << i << " not available" << std::endl;
+            continue;
+        }
+        
+        Message request;
+        request.source_core = i;
+        request.dest_core = 4;  // Core 4 acts as resource manager
+        request.type = MSG_RESOURCE_REQUEST;
+        request.timestamp = std::chrono::steady_clock::now();
+        snprintf(request.data, MAX_MESSAGE_SIZE, "Resource request from Core %d", i);
+        
+        cores[i]->send_message(request);
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    }
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    // Simulate core 4 responding with grants
+    std::cout << "\nCore 4 granting resources and sending responses..." << std::endl;
+    if (cores[4] && cores[4]->is_running()) {
+        for (int i = 0; i < 4; i++) {
+            Message release;
+            release.source_core = 4;
+            release.dest_core = i;
+            release.type = MSG_RESOURCE_RELEASE;
+            release.timestamp = std::chrono::steady_clock::now();
+            snprintf(release.data, MAX_MESSAGE_SIZE, "Resource granted to Core %d", i);
+            
+            cores[4]->send_message(release);
+            std::this_thread::sleep_for(std::chrono::milliseconds(150));
+        }
+    }
+    
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }

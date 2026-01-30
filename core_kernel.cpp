@@ -51,7 +51,7 @@ void CoreKernel::send_message(const Message& msg) {
         return;
     }
     
-    if (!all_cores || msg.dest_core >= all_cores->size()) {
+    if (!all_cores || msg.dest_core >= static_cast<int>(all_cores->size())) {
         std::cerr << "[Core " << core_id << "] Core system not initialized" << std::endl;
         return;
     }
@@ -71,6 +71,25 @@ void CoreKernel::send_message(const Message& msg) {
         dest->inbox_cv.notify_one();
         
         stats.messages_sent++;
+        
+        // Log message for visibility
+        const char* msg_type_str = "UNKNOWN";
+        switch(msg.type) {
+            case MSG_PROCESS_CREATE: msg_type_str = "PROCESS_CREATE"; break;
+            case MSG_PROCESS_MIGRATE: msg_type_str = "PROCESS_MIGRATE"; break;
+            case MSG_PROCESS_TERMINATE: msg_type_str = "PROCESS_TERMINATE"; break;
+            case MSG_RESOURCE_REQUEST: msg_type_str = "RESOURCE_REQUEST"; break;
+            case MSG_RESOURCE_RELEASE: msg_type_str = "RESOURCE_RELEASE"; break;
+            case MSG_SYNC_BARRIER: msg_type_str = "SYNC_BARRIER"; break;
+            case MSG_HEARTBEAT: msg_type_str = "HEARTBEAT"; break;
+            case MSG_SHUTDOWN: msg_type_str = "SHUTDOWN"; break;
+        }
+        std::cout << "[MSG] Core " << core_id << " → Core " << msg.dest_core 
+                  << ": " << msg_type_str;
+        if (msg.process_id >= 0) {
+            std::cout << " (PID=" << msg.process_id << ")";
+        }
+        std::cout << std::endl;
     }
 }
 

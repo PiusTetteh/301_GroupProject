@@ -1,4 +1,5 @@
 #include "multikernel.h"
+#include "smp_system.h"
 #include <iostream>
 #include <thread>
 #include <chrono>
@@ -90,9 +91,75 @@ void demo_scalability(MultikernelSystem& system) {
     std::this_thread::sleep_for(1000ms);
 }
 
+// ============================================================================
+// NEW MESSAGE-PASSING DEMONSTRATIONS
+// ============================================================================
+
+void demo_explicit_migration(MultikernelSystem& system) {
+    std::cout << "\n╔════════════════════════════════════════════════╗" << std::endl;
+    std::cout << "║   DEMO: Explicit Process Migration Messages    ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════════════╝" << std::endl;
+
+    std::cout << "\nCreating processes on specific cores and migrating them..." << std::endl;
+    
+    // Create several processes
+    std::vector<int> pids;
+    for (int i = 0; i < 6; i++) {
+        int pid = system.create_process(5);
+        pids.push_back(pid);
+        std::this_thread::sleep_for(100ms);
+    }
+    
+    std::cout << "\nNow migrating processes between cores..." << std::endl;
+    std::this_thread::sleep_for(500ms);
+    
+    // Trigger migrations which send messages
+    for (size_t i = 0; i < pids.size() && i < 3; i++) {
+        int source = i % 8;
+        int target = (i + 4) % 8;
+        std::cout << "\n[MIGRATION] Attempting to migrate PID " << pids[i] 
+                  << " from Core " << source << " to Core " << target << std::endl;
+        system.migrate_process(pids[i], source, target);
+        std::this_thread::sleep_for(300ms);
+    }
+    
+    std::cout << "\n✓ Process migrations completed - check message counts!" << std::endl;
+    std::this_thread::sleep_for(1s);
+}
+
+void demo_heartbeat_messages(MultikernelSystem& system) {
+    std::cout << "\n╔════════════════════════════════════════════════╗" << std::endl;
+    std::cout << "║   DEMO: Core Heartbeat Messages                 ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════════════╝" << std::endl;
+
+    std::cout << "\nSending heartbeat messages between cores..." << std::endl;
+    std::cout << "Core 0 will ping all other cores...\n" << std::endl;
+    
+    system.send_heartbeat_messages();
+    
+    std::this_thread::sleep_for(1s);
+    std::cout << "\n✓ Heartbeat messages sent and received!" << std::endl;
+    std::this_thread::sleep_for(500ms);
+}
+
+void demo_resource_contention(MultikernelSystem& system) {
+    std::cout << "\n╔════════════════════════════════════════════════╗" << std::endl;
+    std::cout << "║   DEMO: Resource Request/Release Messages      ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════════════╝" << std::endl;
+
+    std::cout << "\nSimulating resource contention across cores..." << std::endl;
+    std::cout << "Multiple cores requesting shared resources via messages...\n" << std::endl;
+    
+    system.demo_resource_messages();
+    
+    std::this_thread::sleep_for(1s);
+    std::cout << "\n✓ Resource management messages exchanged!" << std::endl;
+    std::this_thread::sleep_for(500ms);
+}
+
 void demo_comparison_with_smp() {
     std::cout << "\n╔════════════════════════════════════════════════╗" << std::endl;
-    std::cout << "║   DEMO 5: Multikernel vs Traditional SMP       ║" << std::endl;
+    std::cout << "║   DEMO: Multikernel vs Traditional SMP       ║" << std::endl;
     std::cout << "╚════════════════════════════════════════════════╝" << std::endl;
 
     std::cout << "\n--- Traditional SMP Approach ---" << std::endl;
@@ -109,6 +176,68 @@ void demo_comparison_with_smp() {
     std::cout << "  ✓ Scales linearly with core count" << std::endl;
 
     std::this_thread::sleep_for(2500ms);
+}
+
+void demo_side_by_side_comparison() {
+    std::cout << "\n╔════════════════════════════════════════════════════════╗" << std::endl;
+    std::cout << "║   LIVE DEMO: Side-by-Side SMP vs Multikernel        ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════════════════════╝" << std::endl;
+    
+    // First: Run SMP system
+    std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+    std::cout << "  PART 1: Traditional SMP System" << std::endl;
+    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" << std::endl;
+    
+    SMPSystem smp;
+    smp.start();
+    
+    std::cout << "\nRunning same workload on SMP system..." << std::endl;
+    smp.run_workload();
+    
+    smp.print_statistics();
+    smp.stop();
+    
+    std::this_thread::sleep_for(1s);
+    
+    // Second: Run Multikernel system  
+    std::cout << "\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" << std::endl;
+    std::cout << "  PART 2: Multikernel System" << std::endl;
+    std::cout << "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" << std::endl;
+    
+    MultikernelSystem multikernel;
+    multikernel.start();
+    
+    std::cout << "\nRunning same workload on Multikernel system..." << std::endl;
+    for (int i = 0; i < 20; i++) {
+        multikernel.create_process(5);
+        std::this_thread::sleep_for(50ms);
+    }
+    
+    std::this_thread::sleep_for(500ms);
+    
+    multikernel.print_statistics();
+    
+    // Comparison
+    std::cout << "\n╔════════════════════════════════════════════════════════╗" << std::endl;
+    std::cout << "║                    KEY DIFFERENCES                     ║" << std::endl;
+    std::cout << "╚════════════════════════════════════════════════════════╝" << std::endl;
+    std::cout << "\n  SMP System:" << std::endl;
+    std::cout << "    • Uses GLOBAL LOCK for all operations" << std::endl;
+    std::cout << "    • Every operation causes cache invalidation" << std::endl;
+    std::cout << "    • Lock contention grows with core count" << std::endl;
+    std::cout << "    • Shared memory = cache coherency overhead" << std::endl;
+    
+    std::cout << "\n  Multikernel System:" << std::endl;
+    std::cout << "    • NO global locks (only per-core mutexes)" << std::endl;
+    std::cout << "    • Message passing instead of shared memory" << std::endl;
+    std::cout << "    • Independent cores = minimal contention" << std::endl;
+    std::cout << "    • Scales linearly with more cores" << std::endl;
+    
+    std::cout << "\n  Result: Multikernel has LOWER overhead and BETTER scalability!" << std::endl;
+    
+    multikernel.shutdown();
+    
+    std::this_thread::sleep_for(2s);
 }
 
 // ============================================================================
@@ -141,6 +270,16 @@ int main() {
 
         demo_message_passing(system);
         system.print_statistics();
+        
+        // NEW: Explicit message-passing demos
+        demo_explicit_migration(system);
+        system.print_statistics();
+        
+        demo_heartbeat_messages(system);
+        system.print_statistics();
+        
+        demo_resource_contention(system);
+        system.print_statistics();
 
         demo_load_balancing(system);
         system.print_statistics();
@@ -149,6 +288,9 @@ int main() {
         system.print_statistics();
 
         demo_comparison_with_smp();
+        
+        // NEW: Side-by-side comparison with actual SMP implementation
+        demo_side_by_side_comparison();
 
         // Final statistics
         system.print_statistics();
