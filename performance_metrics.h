@@ -41,8 +41,10 @@ public:
         
         Metrics m = {};
         
-        // Collect from system (would need to add these getters to MultikernelSystem)
-        // For now, using placeholder values
+        // NOTE: These are placeholder/example values for demonstration
+        // In a production system, these would be collected from the actual
+        // MultikernelSystem via getter methods that would need to be added
+        // TODO: Add getter methods to MultikernelSystem for real metrics
         m.total_processes_created = 100;
         m.total_messages_sent = 250;
         m.total_context_switches = 500;
@@ -65,6 +67,7 @@ public:
         std::cout << "\n";
         std::cout << "╔════════════════════════════════════════════════════════╗\n";
         std::cout << "║        MULTIKERNEL OS PERFORMANCE METRICS              ║\n";
+        std::cout << "║        (Example/Placeholder Values)                    ║\n";
         std::cout << "╚════════════════════════════════════════════════════════╝\n";
         std::cout << "\n";
         
@@ -137,6 +140,11 @@ public:
     void save_to_csv(const Metrics& m, const std::string& filename) {
         std::ofstream file(filename);
         
+        if (!file.is_open()) {
+            std::cerr << "Error: Could not open file " << filename << " for writing\n";
+            return;
+        }
+        
         file << "Metric,Value\n";
         file << "Total Processes Created," << m.total_processes_created << "\n";
         file << "Total Messages Sent," << m.total_messages_sent << "\n";
@@ -147,6 +155,12 @@ public:
         file << "Core Utilization (%)," << m.core_utilization_pct << "\n";
         file << "Load Balance Efficiency (%)," << m.load_balance_efficiency << "\n";
         file << "Scalability Factor," << m.scalability_factor << "\n";
+        
+        if (!file.good()) {
+            std::cerr << "Error: Write operation failed for " << filename << "\n";
+            file.close();
+            return;
+        }
         
         file.close();
         std::cout << "Metrics saved to " << filename << "\n";

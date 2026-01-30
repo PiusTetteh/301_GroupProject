@@ -2,6 +2,15 @@
 """
 Web Interface for Multikernel OS
 This provides a REST API and WebSocket interface for real-time system visualization
+
+SECURITY NOTE: This is designed for DEMONSTRATION and DEVELOPMENT only.
+For production use, the following security measures should be implemented:
+- Restrict CORS to specific trusted origins
+- Disable debug mode
+- Use production WSGI server (e.g., gunicorn)
+- Bind to localhost instead of 0.0.0.0
+- Add authentication and authorization
+- Implement rate limiting
 """
 
 from flask import Flask, render_template, jsonify, send_from_directory
@@ -16,8 +25,8 @@ import os
 from datetime import datetime
 
 app = Flask(__name__, static_folder='web_static', template_folder='web_templates')
-CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app)  # NOTE: In production, restrict to specific origins
+socketio = SocketIO(app, cors_allowed_origins="*")  # NOTE: Restrict in production
 
 # Global state
 system_state = {
@@ -39,6 +48,13 @@ class MultikernelInterface:
         """Start the multikernel OS as a subprocess"""
         if self.running:
             return {"status": "already_running"}
+        
+        # Check if executable exists
+        if not os.path.exists('./multikernel_os'):
+            return {"status": "error", "message": "multikernel_os executable not found. Run 'make' first."}
+        
+        if not os.access('./multikernel_os', os.X_OK):
+            return {"status": "error", "message": "multikernel_os is not executable"}
         
         try:
             # Start the multikernel_os process
@@ -71,7 +87,12 @@ class MultikernelInterface:
         try:
             if self.process:
                 self.process.terminate()
-                self.process.wait(timeout=5)
+                try:
+                    self.process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    # Force kill if doesn't terminate gracefully
+                    self.process.kill()
+                    self.process.wait()
             self.running = False
             system_state['running'] = False
             return {"status": "stopped"}
@@ -226,5 +247,10 @@ if __name__ == '__main__':
     print("=" * 60)
     print("  MULTIKERNEL OS - WEB INTERFACE")
     print("  Access at: http://localhost:5000")
+    print()
+    print("  WARNING: Running in development mode")
+    print("  For production, disable debug and use a production server")
     print("=" * 60)
+    # NOTE: debug=True and allow_unsafe_werkzeug=True are for DEVELOPMENT ONLY
+    # For production: use a proper WSGI server like gunicorn
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, allow_unsafe_werkzeug=True)

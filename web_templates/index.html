@@ -364,8 +364,14 @@
         async function startSystem() {
             try {
                 const response = await fetch('/api/start', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
                 addLog('System start requested: ' + data.status);
+                if (data.message) {
+                    addLog('Message: ' + data.message);
+                }
             } catch (error) {
                 addLog('Error starting system: ' + error);
             }
@@ -374,6 +380,9 @@
         async function stopSystem() {
             try {
                 const response = await fetch('/api/stop', { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
                 addLog('System stop requested: ' + data.status);
             } catch (error) {
@@ -384,6 +393,9 @@
         async function refreshStats() {
             try {
                 const response = await fetch('/api/stats');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
                 
                 // Update cores
@@ -396,8 +408,10 @@
                 document.getElementById('totalMessages').textContent = data.total_messages;
                 document.getElementById('activeCores').textContent = Object.keys(data.cores).length;
                 
-                const avgLoad = Object.values(data.cores).reduce((sum, c) => sum + c.load, 0) / 
-                               Object.keys(data.cores).length || 0;
+                const coresArray = Object.values(data.cores);
+                const avgLoad = coresArray.length > 0 
+                    ? coresArray.reduce((sum, c) => sum + c.load, 0) / coresArray.length
+                    : 0;
                 document.getElementById('avgLoad').textContent = avgLoad.toFixed(1);
                 
                 addLog('Statistics refreshed');
