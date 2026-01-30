@@ -51,7 +51,7 @@ void CoreKernel::send_message(const Message& msg) {
         return;
     }
     
-    if (!all_cores || msg.dest_core >= all_cores->size()) {
+    if (!all_cores || msg.dest_core >= static_cast<int>(all_cores->size())) {
         std::cerr << "[Core " << core_id << "] Core system not initialized" << std::endl;
         return;
     }
