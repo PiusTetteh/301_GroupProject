@@ -63,3 +63,33 @@ void run_all_tests(MultikernelSystem& system) {
     tester.test_race_conditions();
     tester.run_performance_profile();
 }
+
+int main() {
+    std::cout << "========================================================" << std::endl;
+    std::cout << "       MULTIKERNEL OS TEST SUITE" << std::endl;
+    std::cout << "========================================================\n" << std::endl;
+    
+    // Create and start the multikernel system
+    MultikernelSystem system;
+    system.start();
+    
+    // Wait for system to stabilize
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    
+    try {
+        // Run all tests
+        run_all_tests(system);
+        
+        std::cout << "\n========================================================" << std::endl;
+        std::cout << "       ALL TESTS COMPLETED" << std::endl;
+        std::cout << "========================================================\n" << std::endl;
+        
+    } catch (const std::exception& e) {
+        std::cerr << "\nTest Error: " << e.what() << std::endl;
+    }
+    
+    // Shutdown
+    system.shutdown();
+    
+    return 0;
+}

@@ -1,3 +1,0 @@
-/home/runner/work/301_GroupProject/301_GroupProject/CMakeFiles/multikernel_os.dir
-/home/runner/work/301_GroupProject/301_GroupProject/CMakeFiles/edit_cache.dir
-/home/runner/work/301_GroupProject/301_GroupProject/CMakeFiles/rebuild_cache.dir

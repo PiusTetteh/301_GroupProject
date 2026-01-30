@@ -27,8 +27,12 @@ set(HEADERS
 # Create executable
 add_executable(multikernel_os ${SOURCES} ${HEADERS})
 
+# Create test executable
+add_executable(multikernel_test tests.cpp core_kernel.cpp multikernel_system.cpp ${HEADERS})
+
 # Link threading library
 target_link_libraries(multikernel_os PRIVATE Threads::Threads)
+target_link_libraries(multikernel_test PRIVATE Threads::Threads)
 
 # Print build information
 message(STATUS "Building Multikernel OS")

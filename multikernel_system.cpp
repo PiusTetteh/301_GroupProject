@@ -215,3 +215,27 @@ void MultikernelSystem::print_statistics() {
     
     std::cout << "========================================================\n" << std::endl;
 }
+
+// ============================================================================
+// COMMUNICATION OVERHEAD CALCULATION
+// ============================================================================
+
+float MultikernelSystem::get_comm_overhead_pct() const {
+    uint64_t total_messages = 0;
+    uint64_t total_processes = 0;
+    
+    for (const auto& core : cores) {
+        auto stats = core->get_statistics();
+        total_messages += stats.messages_sent + stats.messages_received;
+        total_processes += stats.processes_executed;
+    }
+    
+    // Calculate communication overhead as percentage
+    // Formula: (total_messages / (total_processes + total_messages)) * 100
+    if (total_processes + total_messages == 0) {
+        return 0.0f;
+    }
+    
+    return (static_cast<float>(total_messages) / 
+            static_cast<float>(total_processes + total_messages)) * 100.0f;
+}

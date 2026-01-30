@@ -200,6 +200,7 @@ public:
     
     // System-wide statistics
     void print_statistics();
+    float get_comm_overhead_pct() const;
     
 private:
     void load_balancer_thread();

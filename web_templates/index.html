@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multikernel OS - Live Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-start {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #38a169;
+        }
+        
+        .btn-stop {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            background: #e53e3e;
+        }
+        
+        .btn-refresh {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .btn-refresh:hover {
+            background: #3182ce;
+        }
+        
+        .status {
+            margin-left: auto;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .status.running {
+            color: #48bb78;
+        }
+        
+        .status.stopped {
+            color: #f56565;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .cores-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .core-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        
+        .core-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .core-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .core-id {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .core-load {
+            font-size: 2em;
+            font-weight: 700;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .load-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .load-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+        
+        .stats-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-item {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        
+        .stat-label {
+            color: #718096;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .log-panel {
+            background: #1a202c;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-title {
+            color: white;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .log-entry {
+            color: #a0aec0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            padding: 5px 0;
+            border-bottom: 1px solid #2d3748;
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🖥️ Multikernel Operating System</h1>
+            <div class="subtitle">University of Ghana - DCIT301 - Group 54</div>
+            <div class="subtitle" style="margin-top: 10px; font-weight: 600;">
+                Real-Time System Monitoring Dashboard
+            </div>
+        </header>
+        
+        <div class="controls">
+            <button class="btn-start" onclick="startSystem()">▶ Start System</button>
+            <button class="btn-stop" onclick="stopSystem()">⏹ Stop System</button>
+            <button class="btn-refresh" onclick="refreshStats()">🔄 Refresh</button>
+            <div class="status stopped" id="status">
+                ⚫ System Stopped
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div>
+                <h2 style="color: white; margin-bottom: 15px; font-size: 1.5em;">
+                    Per-Core Status
+                </h2>
+                <div class="cores-grid" id="coresGrid">
+                    <!-- Core cards will be dynamically generated -->
+                </div>
+            </div>
+            
+            <div>
+                <h2 style="color: white; margin-bottom: 15px; font-size: 1.5em;">
+                    System Statistics
+                </h2>
+                <div class="stats-panel" id="statsPanel">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Processes</div>
+                        <div class="stat-value" id="totalProcesses">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Total Messages</div>
+                        <div class="stat-value" id="totalMessages">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Active Cores</div>
+                        <div class="stat-value" id="activeCores">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Avg Core Load</div>
+                        <div class="stat-value" id="avgLoad">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-panel">
+            <div class="log-title">📋 System Logs</div>
+            <div id="logEntries">
+                <div class="log-entry">Waiting for system to start...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        const NUM_CORES = 8;
+        const MAX_LOG_ENTRIES = 50;
+        
+        // Initialize cores grid
+        function initCoresGrid() {
+            const grid = document.getElementById('coresGrid');
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < NUM_CORES; i++) {
+                const card = document.createElement('div');
+                card.className = 'core-card';
+                card.id = `core-${i}`;
+                card.innerHTML = `
+                    <div class="core-header">
+                        <div class="core-id">Core ${i}</div>
+                    </div>
+                    <div class="core-load" id="core-${i}-load">0</div>
+                    <div style="color: #718096; font-size: 0.9em;">processes</div>
+                    <div class="load-bar">
+                        <div class="load-fill" id="core-${i}-bar" style="width: 0%"></div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            }
+        }
+        
+        // Update status
+        function updateStatus(running) {
+            const statusEl = document.getElementById('status');
+            if (running) {
+                statusEl.className = 'status running pulse';
+                statusEl.textContent = '🟢 System Running';
+            } else {
+                statusEl.className = 'status stopped';
+                statusEl.textContent = '⚫ System Stopped';
+            }
+        }
+        
+        // Update core display
+        function updateCore(coreId, load) {
+            const loadEl = document.getElementById(`core-${coreId}-load`);
+            const barEl = document.getElementById(`core-${coreId}-bar`);
+            
+            if (loadEl) loadEl.textContent = load;
+            if (barEl) {
+                const percentage = Math.min(load * 10, 100);
+                barEl.style.width = percentage + '%';
+            }
+        }
+        
+        // Add log entry
+        function addLog(message) {
+            const logContainer = document.getElementById('logEntries');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            
+            // Keep only last MAX_LOG_ENTRIES
+            while (logContainer.children.length > MAX_LOG_ENTRIES) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+        
+        // API calls
+        async function startSystem() {
+            try {
+                const response = await fetch('/api/start', { method: 'POST' });
+                const data = await response.json();
+                addLog('System start requested: ' + data.status);
+            } catch (error) {
+                addLog('Error starting system: ' + error);
+            }
+        }
+        
+        async function stopSystem() {
+            try {
+                const response = await fetch('/api/stop', { method: 'POST' });
+                const data = await response.json();
+                addLog('System stop requested: ' + data.status);
+            } catch (error) {
+                addLog('Error stopping system: ' + error);
+            }
+        }
+        
+        async function refreshStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                // Update cores
+                Object.entries(data.cores).forEach(([coreId, coreData]) => {
+                    updateCore(parseInt(coreId), coreData.load);
+                });
+                
+                // Update stats
+                document.getElementById('totalProcesses').textContent = data.total_processes;
+                document.getElementById('totalMessages').textContent = data.total_messages;
+                document.getElementById('activeCores').textContent = Object.keys(data.cores).length;
+                
+                const avgLoad = Object.values(data.cores).reduce((sum, c) => sum + c.load, 0) / 
+                               Object.keys(data.cores).length || 0;
+                document.getElementById('avgLoad').textContent = avgLoad.toFixed(1);
+                
+                addLog('Statistics refreshed');
+            } catch (error) {
+                addLog('Error refreshing stats: ' + error);
+            }
+        }
+        
+        // WebSocket events
+        socket.on('connect', () => {
+            addLog('Connected to server');
+        });
+        
+        socket.on('status', (data) => {
+            updateStatus(data.running);
+        });
+        
+        socket.on('process_created', (data) => {
+            updateCore(data.core, data.load);
+            addLog(`Process ${data.pid} created on Core ${data.core}`);
+        });
+        
+        socket.on('log', (data) => {
+            if (data.message && data.message.trim()) {
+                addLog(data.message);
+            }
+        });
+        
+        socket.on('stats_update', (data) => {
+            Object.entries(data.cores).forEach(([coreId, coreData]) => {
+                updateCore(parseInt(coreId), coreData.load);
+            });
+        });
+        
+        // Initialize
+        initCoresGrid();
+        
+        // Auto-refresh stats every 2 seconds
+        setInterval(refreshStats, 2000);
+    </script>
+</body>
+</html>
