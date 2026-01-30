@@ -1,0 +1,1 @@
+/usr/bin/c++  -Wall -Wextra -O2 -Wl,--dependency-file=CMakeFiles/multikernel_os.dir/link.d CMakeFiles/multikernel_os.dir/main.cpp.o CMakeFiles/multikernel_os.dir/core_kernel.cpp.o CMakeFiles/multikernel_os.dir/multikernel_system.cpp.o -o multikernel_os
